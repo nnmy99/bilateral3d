@@ -1,44 +1,36 @@
-% BFILTER3 Three dimensional bilateral filtering.
-%    This function implements 3-D bilateral filtering using
-%    the method outlined in:
-%
-%       C. Tomasi and R. Manduchi. Bilateral Filtering for 
-%       Gray and Color Images. In Proceedings of the IEEE 
-%       International Conference on Computer Vision, 1998. 
-%
-%    B = bfilter2(A,W,SIGMA) performs 3-D bilateral filtering
-%    for the grayscale image A. A should be a double
-%    precision matrix of size NxMx1 with normalized values in
-%    the closed interval [0,1]. The half-size of the Gaussian
-%    bilateral filter window is defined by W. The standard
-%    deviations of the bilateral filter are given by SIGMA,
-%    where the spatial-domain standard deviation is given by
-%    SIGMA(1) and the intensity-domain standard deviation is
-%    given by SIGMA(2).
-%
-% Douglas R. Lanman, Brown University, September 2006.
-% dlanman@brown.edu, http://mesh.brown.edu/dlanman
+% BFILTER3 Three dimensional bilateral filter.
+%    This function implements 3-D bilateral filter on gray volume.
+%    B = bifilter3(A,w,sigma) 
+%    A: 3D input volume of type double
+%    w: the half-size of the Gaussian filter used in Bilarteral filter.
+%    sigma: this is an (1,2) array parameter. Sigma(1) is the spatial
+%    standard deviation. Sigma(2) is the intensity standard deviation.
+
+% Developed by Nguyen Ngoc My, Kyoto Institue of Technology, Japan
+% Based on 2D Bilateral Filtering of Douglas R. Lanman, Brown University
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Pre-process input and select appropriate filter.
+
 function B = bifilter3(A,w,sigma)
-% Verify that the input image exists and is valid.
-if ~exist('A','var') || isempty(A)
+% Parameters validation.
+if isempty(A) || ~exist('A','var')
    error('Input image A is undefined or invalid.');
 end
 if ~isfloat(A)
    error(['Input image A must be a double precision matrix.']);      
 end
+
 % Verify bilateral filter window size.
-if ~exist('w','var') || isempty(w) || ...
-      numel(w) ~= 1 || w < 1
+if ~exist('w','var') || isempty(w) || numel(w) ~= 1 || w < 1
    w = 5; %default w
 end
 w = ceil(w);
+
 % Verify bilateral filter standard deviations.
 if ~exist('sigma','var') || isempty(sigma) || ...
       numel(sigma) ~= 2 || sigma(1) <= 0 || sigma(2) <= 0
    sigma = [3 0.1]; %default sigma
 end
+
 % Apply either grayscale or color bilateral filtering.
 B = bfltGray(A,w,sigma(1),sigma(2));
 
@@ -60,22 +52,17 @@ for i = 1:dim(1)
              % Extract local region.
              iMin = max(i-w,1);
              iMax = min(i+w,dim(1));
-             
-             
              jMin = max(j-w,1);
              jMax = min(j+w,dim(2));
              kMin = max(k-w,1);
              kMax = min(k+w,dim(3));
              I = A(iMin:iMax,jMin:jMax,kMin:kMax);
-
              % Compute Gaussian intensity weights.
              H = exp(-(I-A(i,j,k)).^2/(2*sigma_r^2));
-
              % Calculate final weight and bilateral filter response.
              F = H.*G((iMin:iMax)-i+w+1,(jMin:jMax)-j+w+1,(kMin:kMax)-k+w+1);
              B(i,j,k) = sum(F(:).*I(:))/sum(F(:));
         end
-               
    end
    waitbar(i/dim(1));
 end
